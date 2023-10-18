@@ -1,46 +1,67 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 
-// #include "sequencial.h"
-#include "utilitarios.h"
-// #include "generate/generator.h"
+#include "implementacao/utilitarios.h"
 
-void printB(FILE *arq)
+int main(int argc, char* argv[])
 {
-    Registros reg;
-
-    rewind(arq);
-
-    while(fread(&reg, sizeof(Registros), 1, arq) == 1)
-        printf("%-10d\t%-15ld\t%s\n", reg.chave, reg.dado1, reg.dado2);
-}
-
-int main(int argc, char *argv[]) 
-{
-    if (argc < 5)
-    {
-        printf("Quantidade de argumentos inválida.\n");
-        return 0;
-    }
-    
+    FILE *arq_bin;
     Entrada entrada;
 
-    entrada.metodo = atoi(argv[1]);
-    entrada.quantidade = atoi(argv[2]);
-    entrada.situacao = atoi(argv[3]);
-    entrada.chave = atoi(argv[4]);
-    printf("%d", entrada.metodo);
+    // Le entrada enquanto verifica se eh valida. Retorna "true" se for valida e "false" caso contrario.
+    if(lerEntrada(&entrada, argc, argv) == false)
+    {
+        printf("O modo de executar o programa esta errado ou algum argumento inserido nao e valido, execute de acordo:\n\n");
+        printf("%s <metodo> <quantidade> <situacao> <chave> [-P|-p]\n", argv[0]);
 
-    FILE *arq = fopen("generate/registros.bin", "r./b");
-    
-    if ((strcmp(argv[5], "-P") == 0) || (strcmp(argv[5], "-p") == 0))
-        printB(arq);
-    
-    
-    
-    
-    
+        exit(1);
+    }
+
+    /*
+        Bloco de codigo relacionado aa leitura do arquivo.
+        Se algum erro ocorrer, o programa eh abortado.
+    */
+    {
+        char nome_arquivo[100];
+
+        printf("Nome do arquivo binario localizado neste diretorio: "); scanf("%[\n]s", nome_arquivo);
+
+        if((arq_bin = fopen(nome_arquivo, "rb")) == NULL)
+        {
+            printf("\nNao foi possivel abrir o arquivo binario %s informado. Abortando o programa...\n", nome_arquivo);
+            return 0;
+        }
+    }
+
+    switch(entrada.metodo)
+    {
+        // Acesso Sequencial Indexado
+        // case 1:
+        
+        // break;
+
+        // Arvore Binaria de Pesquisa
+        // case 2:
+            
+        // break;
+
+        // // Arvore B
+        // case 3:
+
+        // break;
+
+        // // Arvore B*
+        // case 4:
+
+        // break;
+
+        default:
+            printf("TESTE\n");
+    }
+
+    fclose(arq_bin);
+
     return 0;
 }
-
