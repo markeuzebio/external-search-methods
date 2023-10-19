@@ -6,60 +6,47 @@
 #include "sequencial.h"
 #include "utilitarios.h"
 
-Registro *alocarPagina(int qtde_registros_arquivo)
+Registro *alocarPagina(int qtde_itens_por_pagina)
 {
-    Registro *registros = (Registro *) malloc(qtde_registros_arquivo * sizeof(Registro));
+    Registro *registros = (Registro *) malloc(qtde_itens_por_pagina * sizeof(Registro));
 
     return registros;
 }
 
 int calculaItensPorPagina(int qtde_registros_arquivo)
 {
-    return (qtde_registros_arquivo / MAXTABELA) + 1;
+    return (qtde_registros_arquivo / MAX_TABELA) + 1;
 }
 
-void mergesort(int* v, int l, int r){
-    if(l<r){
-        int m = (l + r)/2;
-        mergesort(v,l,m);
-        mergesort(v, m+1, r);
-        merge(v,l,m,r);
-    }
+short preencheTabela(FILE *arq_bin, Tabela* tabela)
+{
+    Registro *pagina;
+
+    tabela->qtde_indices = 0;
+
+    pagina = alocarPagina(ITENS_POR_PAGINA);
+
+    if(pagina == NULL)
+        return -1;
+
+    // Cria uma tabela de indices
+    while(fread(pagina, sizeof(Registro), ITENS_POR_PAGINA, arq_bin) != 0)
+        tabela->indices[tabela->qtde_indices++] = pagina[0].chave;
+
+    return 1;
 }
 
-int sequencial(Registro tab[], int qtde_registros_arquivo, Entrada *item, FILE *arq)
-{ //
-    int ITENSPAGINA;
-    int i, quant_itens;
-    long desloc;
-    Registro pagina;
+bool pesquisa(FILE *arq_bin, Entrada *entrada, Tabela *tabela);
 
-    ITENSPAGINA = calculaItensPorPagina(qtde_registros_arquivo);
+int sequencial(FILE *arq_bin, Entrada *entrada, Registro *registro_saida)
+{
+    Tabela tabela;
 
+    ITENS_POR_PAGINA = calculaItensPorPagina(entrada->quantidade_registros);
 
-    i = 0;
-    while (i < qtde_registros_arquivo && tab[i].chave <= item->chave)
-        i++;
+    if(preencheTabela(arq_bin, &tabela) == -1)
+        return -1;
 
-    if (i == 0)
-        return 0;
-    else
-    {
-        if (i < qtde_registros_arquivo)
-            quant_itens = ITENSPAGINA;
-        else
-        {
-            fseek(arq, 0, SEEK_END);
-            quant_itens = (ftell(arq) / sizeof(Entrada)) % ITENSPAGINA;
-            if (quant_itens == 0)
-                quant_itens = ITENSPAGINA;
-        }
-
-        desloc = (tab[i-1].dado1-1) * ITENSPAGINA * sizeof(Entrada);
-        fseek (arq, desloc, SEEK_SET);
-        fread (&pagina, sizeof(Entrada), quant_itens, arq);
-
-
-    }
+    return 1;
 }
 #endif

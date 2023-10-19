@@ -1,10 +1,9 @@
 #ifndef __SEQUENCIAL__
 #define __SEQUENCIAL__
 
-/*
-    Calcula a quantidade de itens por pagina
-*/
-int calculaItensPorPagina(int);
+#include <stdio.h>
+#include "utilitarios.h"
+
+int sequencial(FILE*, Entrada*, Registro*);
 
 #endif
-
