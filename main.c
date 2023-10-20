@@ -8,6 +8,7 @@
 
 int main(int argc, char* argv[])
 {
+    short retorno_funcao;
     FILE *arq_bin;
     Entrada entrada;
     Registro registro_saida;
@@ -41,11 +42,13 @@ int main(int argc, char* argv[])
     {
         // Acesso Sequencial Indexado
         case 1:
-            if(sequencial(arq_bin, &entrada, &registro_saida) == -1)
-            {
-                printf("Nao foi possivel alocar dinamicamente um vetor em memoria principal. Abortando o programa...");
-                return 0;
-            }
+            retorno_funcao = sequencial(arq_bin, &entrada, &registro_saida);
+            if(retorno_funcao == -1)
+                printf("Nao foi possivel alocar dinamicamente um vetor em memoria principal. Abortando o programa...\n");
+            else if(retorno_funcao == 0)
+                printf("A chave passada como argumento (%d) não existe no arquivo.\n", entrada.chave_buscada);
+            else
+                printf("A chave %d foi encontrada no arquivo!\n", entrada.chave_buscada);
         break;
 
         // Arvore Binaria de Pesquisa
