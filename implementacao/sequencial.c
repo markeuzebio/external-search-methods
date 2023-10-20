@@ -38,16 +38,35 @@ bool pesquisaBinaria(Registro *pagina, int tamanho, Entrada *entrada)
     esq = 0;
     dir = tamanho - 1;
     
-    while(esq <= dir)
+    // Se o vetor esta ordenado, realiza a pesquisa binaria canonica.
+    if(entrada->situacao == 1)
     {
-        meio = (esq + dir) / 2;
+        while(esq <= dir)
+        {
+            meio = (esq + dir) / 2;
 
-        if(entrada->chave_buscada > pagina[meio].chave)
-            esq = meio + 1;
-        else if(entrada->chave_buscada < pagina[meio].chave)
-            dir = meio - 1;
-        else
-            return true;
+            if(entrada->chave_buscada > pagina[meio].chave)
+                esq = meio + 1;
+            else if(entrada->chave_buscada < pagina[meio].chave)
+                dir = meio - 1;
+            else
+                return true;
+        }
+    }
+    // Se o vetor esta desordenado, realiza a pesquisa binaria alternada
+    else
+    {
+        while(esq <= dir)
+        {
+            meio = (esq + dir) / 2;
+
+            if(entrada->chave_buscada < pagina[meio].chave)
+                esq = meio + 1;
+            else if(entrada->chave_buscada > pagina[meio].chave)
+                dir = meio - 1;
+            else
+                return true;
+        }
     }
 
     return false;
@@ -62,8 +81,14 @@ short pesquisa(FILE *arq_bin, Entrada *entrada, Tabela *tabela)
 
     indice_pagina = 0;
 
-    while(indice_pagina < tabela->qtde_indices && entrada->chave_buscada > tabela->indices[indice_pagina])
-        indice_pagina++;
+    // Se o arquivo esta ordenado ascendentemente
+    if(entrada->situacao == 1)
+        while(indice_pagina < tabela->qtde_indices && entrada->chave_buscada >= tabela->indices[indice_pagina])
+            indice_pagina++;
+    // Caso contrario, o arquivo esta ordenado descendentemente
+    else
+        while(indice_pagina < tabela->qtde_indices && entrada->chave_buscada <= tabela->indices[indice_pagina])
+            indice_pagina++;
 
     // O item buscado eh menor que o menor item do arquivo, entao ele nao existe no arquivo.
     if(indice_pagina == 0)
@@ -80,8 +105,10 @@ short pesquisa(FILE *arq_bin, Entrada *entrada, Tabela *tabela)
     else
         qtde_leitura_itens = ITENS_POR_PAGINA;
 
+
     if((pagina = alocarRegistros(qtde_leitura_itens)) == NULL)
         return -1;
+
 
     deslocamento = (indice_pagina - 1) * ITENS_POR_PAGINA * sizeof(Registro);
 

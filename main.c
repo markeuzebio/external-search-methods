@@ -23,32 +23,33 @@ int main(int argc, char* argv[])
     }
 
     /*
-        Bloco de codigo relacionado aa leitura do arquivo.
-        Se algum erro ocorrer, o programa eh abortado.
+        Se o arquivo "registros.bin" nao existir no diretorio corrente,
+        termina a execucao e para.
     */
+    if((arq_bin = fopen("registros.bin", "rb")) == NULL)
     {
-        char nome_arquivo[101];
-
-        printf("Nome do arquivo binario localizado neste diretorio: "); scanf("%s", nome_arquivo);
-
-        if((arq_bin = fopen(nome_arquivo, "rb")) == NULL)
-        {
-            printf("\nNao foi possivel abrir o arquivo binario %s informado. Abortando o programa...\n", nome_arquivo);
-            return 0;
-        }
+        printf("\nNao foi possivel abrir o arquivo binario \"registros.bin\". Abortando o programa...\n");
+        return 0;
     }
 
     switch(entrada.metodo)
     {
         // Acesso Sequencial Indexado
         case 1:
-            retorno_funcao = sequencial(arq_bin, &entrada, &registro_saida);
-            if(retorno_funcao == -1)
-                printf("Nao foi possivel alocar dinamicamente um vetor em memoria principal. Abortando o programa...\n");
-            else if(retorno_funcao == 0)
-                printf("A chave passada como argumento (%d) não existe no arquivo.\n", entrada.chave_buscada);
+            // Se o arquivo passado esta desordenado, nao eh possivel utilizar este metodo.
+            if(entrada.situacao == 3)
+                printf("O metodo escolhido nao funciona se o arquivo estiver desordenado! Abortando o programa...\n");
             else
-                printf("A chave %d foi encontrada no arquivo!\n", entrada.chave_buscada);
+            {
+                retorno_funcao = sequencial(arq_bin, &entrada, &registro_saida);
+
+                if(retorno_funcao == -1)
+                    printf("Nao foi possivel alocar dinamicamente um vetor em memoria principal. Abortando o programa...\n");
+                else if(retorno_funcao == 0)
+                    printf("A chave passada como argumento (%d) não existe no arquivo.\n", entrada.chave_buscada);
+                else
+                    printf("A chave %d foi encontrada no arquivo!\n", entrada.chave_buscada);
+            }
         break;
 
         // Arvore Binaria de Pesquisa
