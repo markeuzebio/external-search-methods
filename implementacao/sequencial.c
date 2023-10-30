@@ -6,6 +6,8 @@
 #include "sequencial.h"
 #include "utilitarios.h"
 
+static unsigned int ITENS_POR_PAGINA;
+
 int calculaItensPorPagina(int qtde_registros_arquivo)
 {
     return (qtde_registros_arquivo / MAX_TABELA) + 1;
@@ -123,7 +125,7 @@ short pesquisa(FILE *arq_bin, Entrada *entrada, Tabela *tabela)
     return retorno_funcao;
 }
 
-int sequencial(FILE *arq_bin, Entrada *entrada, Registro *registro_saida)
+int sequencial(FILE *arq_bin, Entrada *entrada)
 {
     Tabela tabela;
 

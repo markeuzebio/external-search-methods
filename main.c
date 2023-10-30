@@ -5,13 +5,13 @@
 
 #include "implementacao/utilitarios.h"
 #include "implementacao/sequencial.h"
+#include "implementacao/arvore_binaria.h"
 
 int main(int argc, char* argv[])
 {
-    short retorno_funcao;
-    FILE *arq_bin;
+    short int retorno_funcao;
+    FILE *arq_bin, *arq_arv_bin;
     Entrada entrada;
-    Registro registro_saida;
 
     // Le entrada enquanto verifica se eh valida. Retorna "true" se for valida e "false" caso contrario.
     if(lerEntrada(&entrada, argc, argv) == false)
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
                 printf("O metodo escolhido nao funciona se o arquivo estiver desordenado! Abortando o programa...\n");
             else
             {
-                retorno_funcao = sequencial(arq_bin, &entrada, &registro_saida);
+                retorno_funcao = sequencial(arq_bin, &entrada);
 
                 if(retorno_funcao == -1)
                     printf("Nao foi possivel alocar dinamicamente um vetor em memoria principal. Abortando o programa...\n");
@@ -53,9 +53,26 @@ int main(int argc, char* argv[])
         break;
 
         // Arvore Binaria de Pesquisa
-        // case 2:
-            
-        // break;
+        case 2:
+            // Caso nao consiga criar o novo arquivo binario de estrutura arvore binaria
+            if((arq_arv_bin = fopen("registros_arvore.bin", "w+b")) == NULL)
+                printf("Nao foi possivel abrir/gerar o arquivo binario de arvore. Abortando o programa...\n");
+            else
+            {
+                printf("GERANDO O ARQUIVO BINARIO...\n\n");
+                retorno_funcao = arvoreBinariaGerar(arq_bin, arq_arv_bin, entrada.quantidade_registros);
+
+                if(retorno_funcao == 1)
+                {
+                    if(arvoreBinaria(arq_arv_bin, entrada.chave_buscada))
+                        printf("A chave %d foi encontrada no arquivo!\n", entrada.chave_buscada);
+                    else
+                        printf("A chave passada como argumento (%d) não existe no arquivo.\n", entrada.chave_buscada);
+                }
+                else
+                    printf("Nao foi possivel alocar dinamicamente um vetor em memoria principal. Abortando o programa...\n");
+            }
+        break;
 
         // // Arvore B
         // case 3:
