@@ -3,7 +3,7 @@
 
 #include "utilitarios.h"
 
-short int arvoreBinariaGerar(FILE* arq_bin_entrada, FILE* arq_bin_saida, int);
+short int arvoreBinariaGerar(FILE* arq_bin_entrada, FILE* arq_bin_saida, Entrada*);
 bool arvoreBinaria(FILE*, int);
 
 #endif

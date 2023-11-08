@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
             else
             {
                 printf("GERANDO O ARQUIVO BINARIO...\n\n");
-                retorno_funcao = arvoreBinariaGerar(arq_bin, arq_arv_bin, entrada.quantidade_registros);
+                retorno_funcao = arvoreBinariaGerar(arq_bin, arq_arv_bin, &entrada);
 
                 if(retorno_funcao == 1)
                 {

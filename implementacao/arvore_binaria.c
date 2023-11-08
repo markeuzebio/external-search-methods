@@ -74,14 +74,55 @@ void alterarApontadores(FILE *arq_arv_bin, int chave_novo_item, unsigned long po
     }
 }
 
-void inserirRegistroNoArquivo(FILE *arq_arv_bin, No *item)
+void inserirRegistroNoArquivoAsc(FILE *arq_arv_bin, No *item)
+{
+    No no_pai;
+
+    // Insere o no mais recente no arquivo
+    fwrite(item, sizeof(No), 1, arq_arv_bin);
+
+    /* Conjunto de operacoes utilizados para pegar o no pai do no mais recentemente inserido */
+    fseek(arq_arv_bin, -2 * sizeof(No), SEEK_CUR);
+    fread(&no_pai, sizeof(No), 1, arq_arv_bin);
+
+    // Atualiza o apontador direito do no pai, fazendo com que esse apontador aponte para o no mais recentemente inserido
+    no_pai.dir = ftell(arq_arv_bin);
+
+    // Atualiza o registro do no pai
+    fseek(arq_arv_bin, -sizeof(No), SEEK_CUR);
+    fwrite(&no_pai, sizeof(No), 1, arq_arv_bin);
+    fseek(arq_arv_bin, 0, SEEK_END);
+}
+
+void inserirRegistroNoArquivoDesc(FILE *arq_arv_bin, No *item)
+{
+    No no_pai;
+
+    // Insere o no mais recente no arquivo
+    fwrite(item, sizeof(No), 1, arq_arv_bin);
+
+    /* Conjunto de operacoes utilizados para pegar o no pai do no mais recentemente inserido */
+    fseek(arq_arv_bin, -2 * sizeof(No), SEEK_CUR);
+    fread(&no_pai, sizeof(No), 1, arq_arv_bin);
+
+    // Atualiza o apontador esquerdo do no pai, fazendo com que esse apontador aponte para o no mais recentemente inserido
+    no_pai.esq = ftell(arq_arv_bin);
+
+    // Atualiza o registro do no pai
+    fseek(arq_arv_bin, -sizeof(No), SEEK_CUR);
+    fwrite(&no_pai, sizeof(No), 1, arq_arv_bin);
+    fseek(arq_arv_bin, 0, SEEK_END);
+}
+
+void inserirRegistroNoArquivoRand(FILE *arq_arv_bin, No *item)
 {
     fwrite(item, sizeof(No), 1, arq_arv_bin);
     alterarApontadores(arq_arv_bin, item->registro.chave, ftell(arq_arv_bin) - sizeof(No));
     fseek(arq_arv_bin, 0, SEEK_END);
 }
 
-FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], int quantidade_registros, FILE *arq_arv_bin)
+
+FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrada, FILE *arq_arv_bin)
 {
     int i;
     No item_arquivo_gerado;
@@ -101,25 +142,47 @@ FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], int quantidade_
             fwrite(&item_arquivo_gerado, sizeof(No), 1, arq_arv_bin);
         }
         
-        while(i < ITENS_POR_PAGINA && i < quantidade_registros)
+        if(entrada->situacao == 1)
         {
-            item_arquivo_gerado.dir = item_arquivo_gerado.esq = -1;
-            item_arquivo_gerado.registro = pagina[i++];
-            inserirRegistroNoArquivo(arq_arv_bin, &item_arquivo_gerado);
+            while(i < ITENS_POR_PAGINA && i < entrada->quantidade_registros)
+            {
+                item_arquivo_gerado.dir = item_arquivo_gerado.esq = -1;
+                item_arquivo_gerado.registro = pagina[i++];
+                inserirRegistroNoArquivoAsc(arq_arv_bin, &item_arquivo_gerado);
+            }
+        }
+        else if(entrada->situacao == 2)
+        {
+            while(i < ITENS_POR_PAGINA && i < entrada->quantidade_registros)
+            {
+                item_arquivo_gerado.dir = item_arquivo_gerado.esq = -1;
+                item_arquivo_gerado.registro = pagina[i++];
+                inserirRegistroNoArquivoDesc(arq_arv_bin, &item_arquivo_gerado);
+            }
+        }
+        // O arquivo esta ordenado randomicamente
+        else
+        {
+            while(i < ITENS_POR_PAGINA && i < entrada->quantidade_registros)
+            {
+                item_arquivo_gerado.dir = item_arquivo_gerado.esq = -1;
+                item_arquivo_gerado.registro = pagina[i++];
+                inserirRegistroNoArquivoRand(arq_arv_bin, &item_arquivo_gerado);
+            }
         }
     }
 
     return arq_arv_bin;
 }
 
-short int arvoreBinariaGerar(FILE *arq_bin, FILE *arq_arv_bin, int quantidade_registros)
+short int arvoreBinariaGerar(FILE *arq_bin, FILE *arq_arv_bin, Entrada *entrada)
 {
     Registro *pagina;
 
     if((pagina = alocarRegistros(ITENS_POR_PAGINA)) == NULL)
         return 0;
 
-    geraArquivoArvoreBinaria(arq_bin, pagina, quantidade_registros, arq_arv_bin);
+    geraArquivoArvoreBinaria(arq_bin, pagina, entrada, arq_arv_bin);
 
     desalocarRegistros(&pagina);
 
