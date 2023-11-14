@@ -6,6 +6,7 @@
 #include "implementacao/utilitarios.h"
 #include "implementacao/sequencial.h"
 #include "implementacao/arvore_binaria.h"
+#include "implementacao/arvoreB.h"
 
 int main(int argc, char* argv[])
 {
@@ -74,10 +75,27 @@ int main(int argc, char* argv[])
             }
         break;
 
-        // // Arvore B
-        // case 3:
+        // Arvore B
+        case 3:
+        {
+            Pagina *raiz;
 
-        // break;
+            printf("GERANDO A ARVORE B A PARTIR DO ARQUIVO OFERECIDO...\n\n");
+            raiz = gerarArvoreB(arq_bin, &entrada);
+
+            if(raiz == NULL)
+                printf("Nao foi possivel alocar memoria dinamicamente em alguma parte do processo. Abortando o programa...\n");
+            else
+            {
+                if(arvoreB(raiz, entrada.chave_buscada))
+                    printf("A chave %d foi encontrada no arquivo!\n", entrada.chave_buscada);
+                else
+                    printf("A chave passada como argumento (%d) não existe no arquivo.\n", entrada.chave_buscada);
+
+                desalocarArvoreB(&raiz);
+            }
+        }
+        break;
 
         // // Arvore B*
         // case 4:

@@ -74,7 +74,7 @@ bool pesquisaBinaria(Registro *pagina, int tamanho, Entrada *entrada)
     return false;
 }
 
-short pesquisa(FILE *arq_bin, Entrada *entrada, Tabela *tabela)
+static short pesquisa(FILE *arq_bin, Entrada *entrada, Tabela *tabela)
 {
     short retorno_funcao;
     long deslocamento, qtde_leitura_itens;

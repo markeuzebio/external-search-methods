@@ -127,9 +127,11 @@ FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrad
     int i;
     No item_arquivo_gerado;
 
-    while(fread(pagina, sizeof(Registro), ITENS_POR_PAGINA, arq_bin) != 0)
+    i = 0;
+
+    while(i < entrada->quantidade_registros)
     {
-        i = 0;
+        fread(pagina, sizeof(Registro), ITENS_POR_PAGINA, arq_bin);
 
         /*
             Se o arquivo gerado esta vazio, preenche-o com um registro; isso eh importante
@@ -138,8 +140,9 @@ FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrad
         if(arquivoEstaVazio(arq_arv_bin))
         {
             item_arquivo_gerado.dir = item_arquivo_gerado.esq = -1;
-            item_arquivo_gerado.registro = pagina[i++];
+            item_arquivo_gerado.registro = pagina[i % ITENS_POR_PAGINA];
             fwrite(&item_arquivo_gerado, sizeof(No), 1, arq_arv_bin);
+            i++;
         }
         
         if(entrada->situacao == 1)
@@ -147,8 +150,9 @@ FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrad
             while(i < ITENS_POR_PAGINA && i < entrada->quantidade_registros)
             {
                 item_arquivo_gerado.dir = item_arquivo_gerado.esq = -1;
-                item_arquivo_gerado.registro = pagina[i++];
+                item_arquivo_gerado.registro = pagina[i % ITENS_POR_PAGINA];
                 inserirRegistroNoArquivoAsc(arq_arv_bin, &item_arquivo_gerado);
+                i++;
             }
         }
         else if(entrada->situacao == 2)
@@ -156,8 +160,9 @@ FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrad
             while(i < ITENS_POR_PAGINA && i < entrada->quantidade_registros)
             {
                 item_arquivo_gerado.dir = item_arquivo_gerado.esq = -1;
-                item_arquivo_gerado.registro = pagina[i++];
+                item_arquivo_gerado.registro = pagina[i % ITENS_POR_PAGINA];
                 inserirRegistroNoArquivoDesc(arq_arv_bin, &item_arquivo_gerado);
+                i++;
             }
         }
         // O arquivo esta ordenado randomicamente
@@ -166,8 +171,9 @@ FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrad
             while(i < ITENS_POR_PAGINA && i < entrada->quantidade_registros)
             {
                 item_arquivo_gerado.dir = item_arquivo_gerado.esq = -1;
-                item_arquivo_gerado.registro = pagina[i++];
+                item_arquivo_gerado.registro = pagina[i % ITENS_POR_PAGINA];
                 inserirRegistroNoArquivoRand(arq_arv_bin, &item_arquivo_gerado);
+                i++;
             }
         }
     }
