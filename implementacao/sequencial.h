@@ -1,10 +1,18 @@
 #ifndef __SEQUENCIAL__
 #define __SEQUENCIAL__
 
+#include <stdio.h>
+#include "utilitarios.h"
+
 /*
-    Calcula a quantidade de itens por pagina
+    RETURN
+    [
+        -2: Se houve erro na tentativa de abrir um arquivo binario para escrita.
+        -1: Se houver erro ao alocar a memoria dinamicamente.
+        0: A chave passada como entrada nao existe no arquivo binario.
+        1: A chave passada como entrada existe no arquivo binario.
+    ]
 */
-int calculaItensPorPagina(int);
+short int sequencial(FILE*, Entrada*);
 
 #endif
-

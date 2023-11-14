@@ -6,60 +6,134 @@
 #include "sequencial.h"
 #include "utilitarios.h"
 
-Registro *alocarPagina(int qtde_registros_arquivo)
-{
-    Registro *registros = (Registro *) malloc(qtde_registros_arquivo * sizeof(Registro));
-
-    return registros;
-}
+static unsigned int ITENS_POR_PAGINA;
 
 int calculaItensPorPagina(int qtde_registros_arquivo)
 {
-    return (qtde_registros_arquivo / MAXTABELA) + 1;
+    return (qtde_registros_arquivo / MAX_TABELA) + 1;
 }
 
-void mergesort(int* v, int l, int r){
-    if(l<r){
-        int m = (l + r)/2;
-        mergesort(v,l,m);
-        mergesort(v, m+1, r);
-        merge(v,l,m,r);
+short preencheTabela(FILE *arq_bin, Tabela* tabela)
+{
+    Registro *pagina;
+
+    tabela->qtde_indices = 0;
+
+    pagina = alocarRegistros(ITENS_POR_PAGINA);
+
+    if(pagina == NULL)
+        return -1;
+
+    // Cria uma tabela de indices
+    while(fread(pagina, sizeof(Registro), ITENS_POR_PAGINA, arq_bin) != 0)
+        tabela->indices[tabela->qtde_indices++] = pagina[0].chave;
+
+    desalocarRegistros(&pagina);
+
+    return 1;
+}
+
+bool pesquisaBinaria(Registro *pagina, int tamanho, Entrada *entrada)
+{
+    int esq, dir, meio;
+
+    esq = 0;
+    dir = tamanho - 1;
+    
+    // Se o vetor esta ordenado, realiza a pesquisa binaria canonica.
+    if(entrada->situacao == 1)
+    {
+        while(esq <= dir)
+        {
+            meio = (esq + dir) / 2;
+
+            if(entrada->chave_buscada > pagina[meio].chave)
+                esq = meio + 1;
+            else if(entrada->chave_buscada < pagina[meio].chave)
+                dir = meio - 1;
+            else
+                return true;
+        }
     }
-}
-
-int sequencial(Registro tab[], int qtde_registros_arquivo, Entrada *item, FILE *arq)
-{ //
-    int ITENSPAGINA;
-    int i, quant_itens;
-    long desloc;
-    Registro pagina;
-
-    ITENSPAGINA = calculaItensPorPagina(qtde_registros_arquivo);
-
-
-    i = 0;
-    while (i < qtde_registros_arquivo && tab[i].chave <= item->chave)
-        i++;
-
-    if (i == 0)
-        return 0;
+    // Se o vetor esta desordenado, realiza a pesquisa binaria alternada
     else
     {
-        if (i < qtde_registros_arquivo)
-            quant_itens = ITENSPAGINA;
-        else
+        while(esq <= dir)
         {
-            fseek(arq, 0, SEEK_END);
-            quant_itens = (ftell(arq) / sizeof(Entrada)) % ITENSPAGINA;
-            if (quant_itens == 0)
-                quant_itens = ITENSPAGINA;
+            meio = (esq + dir) / 2;
+
+            if(entrada->chave_buscada < pagina[meio].chave)
+                esq = meio + 1;
+            else if(entrada->chave_buscada > pagina[meio].chave)
+                dir = meio - 1;
+            else
+                return true;
         }
-
-        desloc = (tab[i-1].dado1-1) * ITENSPAGINA * sizeof(Entrada);
-        fseek (arq, desloc, SEEK_SET);
-        fread (&pagina, sizeof(Entrada), quant_itens, arq);
-
-
     }
+
+    return false;
+}
+
+static short pesquisa(FILE *arq_bin, Entrada *entrada, Tabela *tabela)
+{
+    short retorno_funcao;
+    long deslocamento, qtde_leitura_itens;
+    int indice_pagina;
+    Registro *pagina;
+
+    indice_pagina = 0;
+
+    // Se o arquivo esta ordenado ascendentemente
+    if(entrada->situacao == 1)
+        while(indice_pagina < tabela->qtde_indices && entrada->chave_buscada >= tabela->indices[indice_pagina])
+            indice_pagina++;
+    // Caso contrario, o arquivo esta ordenado descendentemente
+    else
+        while(indice_pagina < tabela->qtde_indices && entrada->chave_buscada <= tabela->indices[indice_pagina])
+            indice_pagina++;
+
+    // O item buscado eh menor que o menor item do arquivo, entao ele nao existe no arquivo.
+    if(indice_pagina == 0)
+        return 0;
+
+    // Se o item a ser buscado esta na ultima pagina
+    if(indice_pagina == tabela->qtde_indices)
+    {
+        qtde_leitura_itens = entrada->quantidade_registros % ITENS_POR_PAGINA;
+
+        if(qtde_leitura_itens == 0)
+            qtde_leitura_itens = ITENS_POR_PAGINA;
+    }
+    else
+        qtde_leitura_itens = ITENS_POR_PAGINA;
+
+
+    if((pagina = alocarRegistros(qtde_leitura_itens)) == NULL)
+        return -1;
+
+
+    deslocamento = (indice_pagina - 1) * ITENS_POR_PAGINA * sizeof(Registro);
+
+    fseek(arq_bin, deslocamento, SEEK_SET);
+    fread(pagina, sizeof(Registro), qtde_leitura_itens, arq_bin);
+
+    // A pesquisa binaria eh feita e retorna true se achar a chave, caso contrario, retorna false.
+    retorno_funcao = pesquisaBinaria(pagina, qtde_leitura_itens, entrada);
+
+    desalocarRegistros(&pagina);
+
+    return retorno_funcao;
+}
+
+int sequencial(FILE *arq_bin, Entrada *entrada)
+{
+    Tabela tabela;
+
+    ITENS_POR_PAGINA = calculaItensPorPagina(entrada->quantidade_registros);
+
+    if(preencheTabela(arq_bin, &tabela) == -1)
+        return -1;
+
+    return pesquisa(arq_bin, entrada, &tabela);
 }
 #endif
