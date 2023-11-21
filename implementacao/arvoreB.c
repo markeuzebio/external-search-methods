@@ -181,17 +181,14 @@ Pagina* gerarArvoreB(FILE *arq_bin, Entrada *entrada)
 
     i = 0;
 
+    fread(registros, sizeof(Registro), ITENS_POR_PAGINA, arq_bin);
     while(i < entrada->quantidade_registros)
     {
-        fread(registros, sizeof(Registro), ITENS_POR_PAGINA, arq_bin);
+        if(!(i % ITENS_POR_PAGINA == 0 && i != 0))
+            fread(registros, sizeof(Registro), ITENS_POR_PAGINA, arq_bin);
 
-        while(i < entrada->quantidade_registros)
-        {
-            inserir(&raiz, &registros[i % ITENS_POR_PAGINA]);
-            i++;
-        }
-
-        printf("%ld\n", i);
+        inserir(&raiz, &registros[i % ITENS_POR_PAGINA]);
+        i++;
     }
 
     desalocarRegistros(&registros);
@@ -201,6 +198,5 @@ Pagina* gerarArvoreB(FILE *arq_bin, Entrada *entrada)
 
 bool arvoreB(Pagina *raiz, int chave)
 {
-    printArvoreB(raiz);
     return pesquisa(raiz, chave);
 }

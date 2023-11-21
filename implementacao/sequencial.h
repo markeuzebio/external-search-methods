@@ -13,6 +13,6 @@
         1: A chave passada como entrada existe no arquivo binario.
     ]
 */
-short int sequencial(FILE*, Entrada*);
+short int sequencial(FILE*, Entrada*, Registro*);
 
 #endif

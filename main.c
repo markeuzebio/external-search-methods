@@ -7,11 +7,13 @@
 #include "implementacao/sequencial.h"
 #include "implementacao/arvore_binaria.h"
 #include "implementacao/arvoreB.h"
+#include "implementacao/arvoreBs.h"
 
 int main(int argc, char* argv[])
 {
     short int retorno_funcao;
     FILE *arq_bin, *arq_arv_bin;
+    Registro reg_retorno;
     Entrada entrada;
 
     // Le entrada enquanto verifica se eh valida. Retorna "true" se for valida e "false" caso contrario.
@@ -42,12 +44,12 @@ int main(int argc, char* argv[])
                 printf("O metodo escolhido nao funciona se o arquivo estiver desordenado! Abortando o programa...\n");
             else
             {
-                retorno_funcao = sequencial(arq_bin, &entrada);
+                retorno_funcao = sequencial(arq_bin, &entrada, &reg_retorno);
 
                 if(retorno_funcao == -1)
                     printf("Nao foi possivel alocar dinamicamente um vetor em memoria principal. Abortando o programa...\n");
                 else if(retorno_funcao == 0)
-                    printf("A chave passada como argumento (%d) não existe no arquivo.\n", entrada.chave_buscada);
+                    printf("A chave passada como argumento (%d) não existe no arquivo!", entrada.chave_buscada);
                 else
                     printf("A chave %d foi encontrada no arquivo!\n", entrada.chave_buscada);
             }
@@ -97,13 +99,30 @@ int main(int argc, char* argv[])
         }
         break;
 
-        // // Arvore B*
-        // case 4:
+        // Arvore B*
+        case 4:
+        {
+            Pagina_ *raiz;
 
-        // break;
+            printf("GERANDO A ARVORE B* A PARTIR DO ARQUIVO OFERECIDO...\n\n");
+            raiz = gerarArvoreB_(arq_bin, &entrada);
+
+            if(raiz == NULL)
+                printf("Nao foi possivel alocar memoria dinamicamente em alguma parte do processo. Abortando o programa...\n");
+            else
+            {
+                if(arvoreB_(raiz, entrada.chave_buscada))
+                    printf("A chave %d foi encontrada no arquivo!\n", entrada.chave_buscada);
+                else
+                    printf("A chave passada como argumento (%d) não existe no arquivo.\n", entrada.chave_buscada);
+
+                desalocarArvoreB_(&raiz);
+            }
+        }
+        break;
 
         default:
-            printf("TESTE\n");
+            printf("ENTRADA INVALIDA...\n");
     }
 
     fclose(arq_bin);

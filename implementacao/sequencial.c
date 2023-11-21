@@ -33,7 +33,7 @@ short preencheTabela(FILE *arq_bin, Tabela* tabela)
     return 1;
 }
 
-bool pesquisaBinaria(Registro *pagina, int tamanho, Entrada *entrada)
+static bool pesquisaBinaria(Registro *pagina, int tamanho, Entrada *entrada, Registro *reg_retorno)
 {
     int esq, dir, meio;
 
@@ -52,7 +52,10 @@ bool pesquisaBinaria(Registro *pagina, int tamanho, Entrada *entrada)
             else if(entrada->chave_buscada < pagina[meio].chave)
                 dir = meio - 1;
             else
+            {
+                *reg_retorno = pagina[meio];
                 return true;
+            }
         }
     }
     // Se o vetor esta desordenado, realiza a pesquisa binaria alternada
@@ -74,7 +77,7 @@ bool pesquisaBinaria(Registro *pagina, int tamanho, Entrada *entrada)
     return false;
 }
 
-static short pesquisa(FILE *arq_bin, Entrada *entrada, Tabela *tabela)
+static short pesquisa(FILE *arq_bin, Entrada *entrada, Tabela *tabela, Registro *reg_retorno)
 {
     short retorno_funcao;
     long deslocamento, qtde_leitura_itens;
@@ -118,14 +121,14 @@ static short pesquisa(FILE *arq_bin, Entrada *entrada, Tabela *tabela)
     fread(pagina, sizeof(Registro), qtde_leitura_itens, arq_bin);
 
     // A pesquisa binaria eh feita e retorna true se achar a chave, caso contrario, retorna false.
-    retorno_funcao = pesquisaBinaria(pagina, qtde_leitura_itens, entrada);
+    retorno_funcao = pesquisaBinaria(pagina, qtde_leitura_itens, entrada, reg_retorno);
 
     desalocarRegistros(&pagina);
 
     return retorno_funcao;
 }
 
-int sequencial(FILE *arq_bin, Entrada *entrada)
+int sequencial(FILE *arq_bin, Entrada *entrada, Registro *reg_retorno)
 {
     Tabela tabela;
 
@@ -134,6 +137,6 @@ int sequencial(FILE *arq_bin, Entrada *entrada)
     if(preencheTabela(arq_bin, &tabela) == -1)
         return -1;
 
-    return pesquisa(arq_bin, entrada, &tabela);
+    return pesquisa(arq_bin, entrada, &tabela, reg_retorno);
 }
 #endif
