@@ -39,7 +39,7 @@ void iniciaArvore_(Pagina_ **raiz)
     *raiz = NULL;
 }
 
-void insereRegistroNaPagina_(Pagina_ *pagina, Registro *registro)
+void insereRegistroNaPagina_(Pagina_ *pagina, Registro *registro, Metrica *metricas)
 {
     short int k;
 
@@ -49,13 +49,18 @@ void insereRegistroNaPagina_(Pagina_ *pagina, Registro *registro)
     {
         pagina->Uniao.Folha.registros[k] = pagina->Uniao.Folha.registros[k - 1];
         k--;
+
+        metricas->n_comparacoes_pre_processamento++;
     }
+
+    if(k > 0)
+        metricas->n_comparacoes_pre_processamento++;
 
     pagina->Uniao.Folha.registros[k] = *registro;
     pagina->Uniao.Folha.n++;
 }
 
-void insereIndiceNaPagina_(Pagina_ *pagina, int chave, Pagina_ *apontador_direita)
+void insereIndiceNaPagina_(Pagina_ *pagina, int chave, Pagina_ *apontador_direita, Metrica *metricas)
 {
     short int k;
 
@@ -66,14 +71,19 @@ void insereIndiceNaPagina_(Pagina_ *pagina, int chave, Pagina_ *apontador_direit
         pagina->Uniao.Indice.indices[k] = pagina->Uniao.Indice.indices[k - 1];
         pagina->Uniao.Indice.prox_pagina[k + 1] = pagina->Uniao.Indice.prox_pagina[k];
         k--;
+
+        metricas->n_comparacoes_pre_processamento++;
     }
+
+    if(k > 0)
+        metricas->n_comparacoes_pre_processamento++;
 
     pagina->Uniao.Indice.indices[k] = chave;
     pagina->Uniao.Indice.prox_pagina[k + 1] = apontador_direita;
     pagina->Uniao.Indice.n++;
 }
 
-void ins_(Pagina_ *raiz, Registro *item, Pagina_ **pagina_retorno, int *chave_retorno, bool *cresceu)
+void ins_(Pagina_ *raiz, Registro *item, Pagina_ **pagina_retorno, int *chave_retorno, bool *cresceu, Metrica *metricas)
 {
     unsigned short int i;
 
@@ -81,7 +91,7 @@ void ins_(Pagina_ *raiz, Registro *item, Pagina_ **pagina_retorno, int *chave_re
     {
         if(raiz->Uniao.Folha.n < ORDEM_MM_)
         {
-            insereRegistroNaPagina_(raiz, item);
+            insereRegistroNaPagina_(raiz, item, metricas);
             *cresceu = false;
             return;
         }
@@ -98,18 +108,21 @@ void ins_(Pagina_ *raiz, Registro *item, Pagina_ **pagina_retorno, int *chave_re
             if(item->chave <= raiz->Uniao.Folha.registros[ORDEM_M_].chave)
             {
                 // Insere o ultimo item da pagina original na pagina nova
-                insereRegistroNaPagina_(nova_pagina, &raiz->Uniao.Folha.registros[ORDEM_MM_ - 1]);
+                insereRegistroNaPagina_(nova_pagina, &raiz->Uniao.Folha.registros[ORDEM_MM_ - 1], metricas);
                 // Insere o item na pagina original
                 raiz->Uniao.Folha.n--;
-                insereRegistroNaPagina_(raiz, item);
+                insereRegistroNaPagina_(raiz, item, metricas);
             }
             // O item estara contido na nova pagina
             else
-                insereRegistroNaPagina_(nova_pagina, item);
+                insereRegistroNaPagina_(nova_pagina, item, metricas);
+
+            // Metrica que conta a comparacao do if anterior
+            metricas->n_comparacoes_pre_processamento++;
 
             // Passa os itens da metade em diante da pagina original para a pagina nova
             for(int j = ORDEM_M_ ; j < ORDEM_MM_ ; j++)
-                insereRegistroNaPagina_(nova_pagina, &raiz->Uniao.Folha.registros[j]);
+                insereRegistroNaPagina_(nova_pagina, &raiz->Uniao.Folha.registros[j], metricas);
 
             *cresceu = true;
             // Altera informacoes da pagina original, diminuindo a quantidade de elementos para a metade
@@ -131,18 +144,25 @@ void ins_(Pagina_ *raiz, Registro *item, Pagina_ **pagina_retorno, int *chave_re
     i = 1;
 
     while(i < raiz->Uniao.Indice.n && item->chave > raiz->Uniao.Indice.indices[i - 1])
+    {
         i++;
+        metricas->n_comparacoes_pre_processamento++;
+    }
 
+    if(i > 1 && i < raiz->Uniao.Indice.n)
+        metricas->n_comparacoes_pre_processamento++;
+
+    metricas->n_comparacoes_pre_processamento++;
     if(raiz->Uniao.Indice.indices[i - 1] > item->chave)
-        ins_(raiz->Uniao.Indice.prox_pagina[i - 1], item, pagina_retorno, chave_retorno, cresceu);
+        ins_(raiz->Uniao.Indice.prox_pagina[i - 1], item, pagina_retorno, chave_retorno, cresceu, metricas);
     else
-        ins_(raiz->Uniao.Indice.prox_pagina[i], item, pagina_retorno, chave_retorno, cresceu);
+        ins_(raiz->Uniao.Indice.prox_pagina[i], item, pagina_retorno, chave_retorno, cresceu, metricas);
 
     if(*cresceu)
     {
         if(raiz->Uniao.Indice.n < ORDEM_MM_)
         {
-            insereIndiceNaPagina_(raiz, *chave_retorno, *pagina_retorno);
+            insereIndiceNaPagina_(raiz, *chave_retorno, *pagina_retorno, metricas);
             *cresceu = false;
             return;
         }
@@ -159,18 +179,18 @@ void ins_(Pagina_ *raiz, Registro *item, Pagina_ **pagina_retorno, int *chave_re
             if(i <= ORDEM_M_ + 1)
             {
                 // Insere o ultimo indice da pagina original na pagina nova
-                insereIndiceNaPagina_(nova_pagina, raiz->Uniao.Indice.indices[ORDEM_MM_ - 1], raiz->Uniao.Indice.prox_pagina[ORDEM_MM_]);
+                insereIndiceNaPagina_(nova_pagina, raiz->Uniao.Indice.indices[ORDEM_MM_ - 1], raiz->Uniao.Indice.prox_pagina[ORDEM_MM_], metricas);
                 // Insere o indice retornado na pagina original
                 raiz->Uniao.Indice.n--;
-                insereIndiceNaPagina_(raiz, *chave_retorno, *pagina_retorno);
+                insereIndiceNaPagina_(raiz, *chave_retorno, *pagina_retorno, metricas);
             }
             // O indice retornado estara contido na pagina nova
             else
-                insereIndiceNaPagina_(nova_pagina, *chave_retorno, *pagina_retorno);
+                insereIndiceNaPagina_(nova_pagina, *chave_retorno, *pagina_retorno, metricas);
 
             // Passa os indices da metade em diante da pagina original para a pagina nova
             for(int j = ORDEM_M_ + 1 ; j < ORDEM_MM_ ; j++)
-                insereIndiceNaPagina_(nova_pagina, raiz->Uniao.Indice.indices[j], raiz->Uniao.Indice.prox_pagina[j + 1]);
+                insereIndiceNaPagina_(nova_pagina, raiz->Uniao.Indice.indices[j], raiz->Uniao.Indice.prox_pagina[j + 1], metricas);
 
             // Altera o apontador mais aa esquerda da nova pagina
             nova_pagina->Uniao.Indice.prox_pagina[0] = raiz->Uniao.Indice.prox_pagina[ORDEM_M_ + 1];
@@ -185,7 +205,7 @@ void ins_(Pagina_ *raiz, Registro *item, Pagina_ **pagina_retorno, int *chave_re
     }
 }
 
-void inserir_(Pagina_ **raiz, Registro *item)
+void inserir_(Pagina_ **raiz, Registro *item, Metrica *metricas)
 {
     bool cresceu;
     int chave_retornada;
@@ -193,7 +213,7 @@ void inserir_(Pagina_ **raiz, Registro *item)
 
     if(*raiz != NULL)
     {
-        ins_(*raiz, item, &pagina_retornada, &chave_retornada, &cresceu);
+        ins_(*raiz, item, &pagina_retornada, &chave_retornada, &cresceu, metricas);
 
         if(cresceu)
         {
@@ -229,7 +249,7 @@ void inserir_(Pagina_ **raiz, Registro *item)
     }
 }
 
-static bool pesquisaBinaria(Registro *pagina, int tamanho, int chave)
+static bool pesquisaBinaria(Registro *pagina, int tamanho, int chave, Metrica *metricas)
 {
     short int esq, dir, meio;
 
@@ -238,6 +258,7 @@ static bool pesquisaBinaria(Registro *pagina, int tamanho, int chave)
     
     while(esq <= dir)
     {
+        metricas->n_comparacoes_pesquisa++;
         meio = (esq + dir) / 2;
 
         if(chave > pagina[meio].chave)
@@ -251,25 +272,29 @@ static bool pesquisaBinaria(Registro *pagina, int tamanho, int chave)
     return false;
 }
 
-static bool pesquisa(Pagina_ *raiz, int chave)
+static bool pesquisa(Pagina_ *raiz, int chave, Metrica *metricas)
 {
     short int i;
 
     if(raiz->tp == FOLHA)
-        return pesquisaBinaria(raiz->Uniao.Folha.registros, raiz->Uniao.Folha.n, chave);
+        return pesquisaBinaria(raiz->Uniao.Folha.registros, raiz->Uniao.Folha.n, chave, metricas);
 
     i = 1;
 
     while(i < raiz->Uniao.Indice.n && chave > raiz->Uniao.Indice.indices[i - 1])
+    {
         i++;
+        metricas->n_comparacoes_pesquisa++;
+    }
 
+    metricas->n_comparacoes_pesquisa++;
     if(chave < raiz->Uniao.Indice.indices[i - 1])
-        return arvoreB_(raiz->Uniao.Indice.prox_pagina[i - 1], chave);
-        
-    return arvoreB_(raiz->Uniao.Indice.prox_pagina[i], chave);
+        return pesquisa(raiz->Uniao.Indice.prox_pagina[i - 1], chave, metricas);
+
+    return pesquisa(raiz->Uniao.Indice.prox_pagina[i], chave, metricas);
 }
 
-Pagina_* gerarArvoreB_(FILE *arq_bin, Entrada *entrada)
+Pagina_* gerarArvoreB_(FILE *arq_bin, Entrada *entrada, Metrica *metricas)
 {
     /* 
         Calcula a quantidade maxima de itens que podem ser lidos de uma
@@ -280,6 +305,12 @@ Pagina_* gerarArvoreB_(FILE *arq_bin, Entrada *entrada)
     unsigned long i;
     Registro *registros;
     Pagina_ *raiz;
+    // Variaveis usadas para metricas
+    clock_t inicio;
+    clock_t fim;
+
+    // --- INICIO PRE-PROCESSAMENTO --- //
+    inicio = clock();
 
     iniciaArvore_(&raiz);
 
@@ -289,21 +320,40 @@ Pagina_* gerarArvoreB_(FILE *arq_bin, Entrada *entrada)
     i = 0;
 
     fread(registros, sizeof(Registro), ITENS_POR_PAGINA, arq_bin);
+    metricas->n_leitura_pre_processamento++;
     while(i < entrada->quantidade_registros)
     {
         if(i % ITENS_POR_PAGINA == 0 && i != 0)
+        {
             fread(registros, sizeof(Registro), ITENS_POR_PAGINA, arq_bin);
+            metricas->n_leitura_pre_processamento++;
+        }
 
-        inserir_(&raiz, &registros[i % ITENS_POR_PAGINA]);
+        inserir_(&raiz, &registros[i % ITENS_POR_PAGINA], metricas);
         i++;
     }
 
     desalocarRegistros(&registros);
 
+    fim = clock();
+
+    metricas->t_pre_processamento += ((double) (fim - inicio)) / CLOCKS_PER_SEC;
+    // --- FIM PRE-PROCESSAMENTO --- //
+
     return raiz;
 }
 
-bool arvoreB_(Pagina_ *raiz, int chave)
+bool arvoreB_(Pagina_ *raiz, int chave, Metrica *metricas)
 {
-    return pesquisa(raiz, chave);
+    bool resultado_pesquisa;
+    clock_t inicio;
+    clock_t fim;
+
+    inicio = clock();
+    resultado_pesquisa = pesquisa(raiz, chave, metricas);
+    fim = clock();
+
+    metricas->t_pesquisa = ((double) fim - inicio) / CLOCKS_PER_SEC;
+
+    return resultado_pesquisa;
 }

@@ -47,3 +47,28 @@ bool lerEntrada(Entrada* entrada, int argc, char** argumentos)
 
     return true;
 }
+
+void exibirMetricas(Metrica *metricas)
+{
+    printf("\n--------- METRICAS ---------\n");
+    printf("TEMPO TOTAL DE PRE-PROCESSAMENTO: %.8fs\n", metricas->t_pre_processamento);
+    printf("TEMPO TOTAL DE PESQUISA: %.8fs\n", metricas->t_pesquisa);
+    printf("TEMPO TOTAL: %.8fs\n", metricas->t_pesquisa + metricas->t_pre_processamento);
+    printf("NUMERO TOTAL DE LEITURA EM PRE-PROCESSAMENTO: %lu\n", metricas->n_leitura_pre_processamento);
+    printf("NUMERO TOTAL DE LEITURA EM PESQUISA: %lu\n", metricas->n_leitura_pesquisa);
+    printf("NUMERO TOTAL DE LEITURAS: %lu\n", metricas->n_leitura_pesquisa + metricas->n_leitura_pre_processamento);
+    printf("NUMERO TOTAL DE COMPARACOES EM PRE-PROCESSAMENTO: %ld\n", metricas->n_comparacoes_pre_processamento);
+    printf("NUMERO TOTAL DE COMPARACOES EM PESQUISA: %lu\n", metricas->n_comparacoes_pesquisa);
+    printf("NUMERO TOTAL DE COMPARACOES: %lu\n", metricas->n_comparacoes_pesquisa + metricas->n_comparacoes_pre_processamento);
+    printf("----------------------------\n");
+}
+
+void resetaMetricas(Metrica *metricas)
+{
+    metricas->n_comparacoes_pesquisa = 0;
+    metricas->n_comparacoes_pre_processamento = 0;
+    metricas->n_leitura_pre_processamento = 0;
+    metricas->n_leitura_pesquisa = 0;
+    metricas->t_pre_processamento = 0;
+    metricas->t_pesquisa = 0;
+}

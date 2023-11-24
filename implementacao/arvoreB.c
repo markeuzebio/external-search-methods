@@ -30,7 +30,7 @@ void iniciaArvore(Pagina **raiz)
     *raiz = NULL;
 }
 
-static bool pesquisa(Pagina *raiz, int chave)
+static bool pesquisa(Pagina *raiz, int chave, Metrica *metricas)
 {
     unsigned short int i;
 
@@ -40,17 +40,24 @@ static bool pesquisa(Pagina *raiz, int chave)
     i = 1;
 
     while(i < raiz->n && chave > raiz->registros[i - 1].chave)
+    {
         i++;
+        metricas->n_comparacoes_pesquisa++;
+    }
 
+    if(i < raiz->n)
+        metricas->n_comparacoes_pesquisa++;
+
+    metricas->n_comparacoes_pesquisa++;
     if(chave == raiz->registros[i - 1].chave)
         return true;
     else if(chave > raiz->registros[i - 1].chave)
-        return pesquisa(raiz->prox_pagina[i], chave);
+        return pesquisa(raiz->prox_pagina[i], chave, metricas);
     else
-        return pesquisa(raiz->prox_pagina[i - 1], chave);
+        return pesquisa(raiz->prox_pagina[i - 1], chave, metricas);
 }
 
-void insereNaPagina(Pagina *pagina, Registro *item, Pagina *apontador_direita)
+void insereNaPagina(Pagina *pagina, Registro *item, Pagina *apontador_direita, Metrica *metricas)
 {
     unsigned short int k;
 
@@ -58,17 +65,21 @@ void insereNaPagina(Pagina *pagina, Registro *item, Pagina *apontador_direita)
 
     while(k > 0 && pagina->registros[k - 1].chave > item->chave)
     {
+        metricas->n_comparacoes_pre_processamento++;
         pagina->registros[k] = pagina->registros[k - 1];
         pagina->prox_pagina[k + 1] = pagina->prox_pagina[k];
         k--;
     }
+
+    if(k > 0)
+        metricas->n_comparacoes_pre_processamento++;
 
     pagina->registros[k] = *item;
     pagina->prox_pagina[k + 1] = apontador_direita;
     pagina->n++;
 }
 
-void ins(Pagina *raiz, Registro *item, Pagina **pagina_retorno, Registro *registro_retorno, bool *cresceu)
+void ins(Pagina *raiz, Registro *item, Pagina **pagina_retorno, Registro *registro_retorno, bool *cresceu, Metrica *metricas)
 {
     unsigned short int i;
 
@@ -83,18 +94,25 @@ void ins(Pagina *raiz, Registro *item, Pagina **pagina_retorno, Registro *regist
     i = 1;
 
     while(i < raiz->n && item->chave > raiz->registros[i - 1].chave)
+    {
         i++;
+        metricas->n_comparacoes_pre_processamento++;
+    }
 
+    if(i < raiz->n)
+        metricas->n_comparacoes_pre_processamento++;
+
+    metricas->n_comparacoes_pre_processamento++;
     if(raiz->registros[i - 1].chave > item->chave)
-        ins(raiz->prox_pagina[i - 1], item, pagina_retorno, registro_retorno, cresceu);
+        ins(raiz->prox_pagina[i - 1], item, pagina_retorno, registro_retorno, cresceu, metricas);
     else
-        ins(raiz->prox_pagina[i], item, pagina_retorno, registro_retorno, cresceu);
+        ins(raiz->prox_pagina[i], item, pagina_retorno, registro_retorno, cresceu, metricas);
 
     if(*cresceu)
     {
         if(raiz->n < ORDEM_MM)
         {
-            insereNaPagina(raiz, registro_retorno, *pagina_retorno);
+            insereNaPagina(raiz, registro_retorno, *pagina_retorno, metricas);
             *cresceu = false;
             return;
         }
@@ -111,18 +129,18 @@ void ins(Pagina *raiz, Registro *item, Pagina **pagina_retorno, Registro *regist
             if(i <= ORDEM_M + 1)
             {
                 // Insere o ultimo item da pagina original na pagina nova
-                insereNaPagina(nova_pagina, &raiz->registros[ORDEM_MM - 1], raiz->prox_pagina[ORDEM_MM]);
+                insereNaPagina(nova_pagina, &raiz->registros[ORDEM_MM - 1], raiz->prox_pagina[ORDEM_MM], metricas);
                 // Insere o registro retornado na pagina original
                 raiz->n--;
-                insereNaPagina(raiz, registro_retorno, *pagina_retorno);
+                insereNaPagina(raiz, registro_retorno, *pagina_retorno, metricas);
             }
             // O registro retornado a ser inserido estara na pagina nova
             else
-                insereNaPagina(nova_pagina, registro_retorno, *pagina_retorno);
+                insereNaPagina(nova_pagina, registro_retorno, *pagina_retorno, metricas);
 
             // Move a segunda metade (tirando o elemento do meio) da pagina original para a pagina nova
             for(int j = ORDEM_M + 1 ; j < ORDEM_MM ; j++)
-                insereNaPagina(nova_pagina, &raiz->registros[j], raiz->prox_pagina[j + 1]);
+                insereNaPagina(nova_pagina, &raiz->registros[j], raiz->prox_pagina[j + 1], metricas);
 
             // Altera o apontador mais aa esquerda da nova pagina
             nova_pagina->prox_pagina[0] = raiz->prox_pagina[ORDEM_M + 1];
@@ -137,13 +155,13 @@ void ins(Pagina *raiz, Registro *item, Pagina **pagina_retorno, Registro *regist
     }
 }
 
-void inserir(Pagina **raiz, Registro *item)
+void inserir(Pagina **raiz, Registro *item, Metrica *metricas)
 {
     bool cresceu;
     Registro registro_retornado;
     Pagina *pagina_retornada;
 
-    ins(*raiz, item, &pagina_retornada, &registro_retornado, &cresceu);
+    ins(*raiz, item, &pagina_retornada, &registro_retornado, &cresceu, metricas);
 
     if(cresceu)
     {
@@ -162,7 +180,7 @@ void inserir(Pagina **raiz, Registro *item)
     }
 }
 
-Pagina* gerarArvoreB(FILE *arq_bin, Entrada *entrada)
+Pagina* gerarArvoreB(FILE *arq_bin, Entrada *entrada, Metrica *metricas)
 {
     /* 
         Calcula a quantidade maxima de itens que podem ser lidos de uma
@@ -173,6 +191,12 @@ Pagina* gerarArvoreB(FILE *arq_bin, Entrada *entrada)
     unsigned long i;
     Registro *registros;
     Pagina *raiz;
+    // Variaveis usadas para metricas
+    clock_t inicio;
+    clock_t fim;
+
+    // --- INICIO PRE-PROCESSAMENTO --- //
+    inicio = clock();
 
     iniciaArvore(&raiz);
     
@@ -181,22 +205,46 @@ Pagina* gerarArvoreB(FILE *arq_bin, Entrada *entrada)
 
     i = 0;
 
+    metricas->n_leitura_pre_processamento++;
     fread(registros, sizeof(Registro), ITENS_POR_PAGINA, arq_bin);
     while(i < entrada->quantidade_registros)
     {
-        if(!(i % ITENS_POR_PAGINA == 0 && i != 0))
+        if(i % ITENS_POR_PAGINA == 0 && i != 0)
+        {
             fread(registros, sizeof(Registro), ITENS_POR_PAGINA, arq_bin);
+            metricas->n_leitura_pre_processamento++;
+        }
 
-        inserir(&raiz, &registros[i % ITENS_POR_PAGINA]);
+        inserir(&raiz, &registros[i % ITENS_POR_PAGINA], metricas);
         i++;
     }
 
     desalocarRegistros(&registros);
 
+    fim = clock();
+
+    metricas->t_pre_processamento = ((double) fim - inicio) / CLOCKS_PER_SEC;
+    // --- FIM PRE-PROCESSAMENTO --- //
+
     return raiz;
 }
 
-bool arvoreB(Pagina *raiz, int chave)
+bool arvoreB(Pagina *raiz, int chave, Metrica *metricas)
 {
-    return pesquisa(raiz, chave);
+    bool retorno_funcao;
+    // Variaveis usadas para metricas
+    clock_t inicio;
+    clock_t fim;
+
+    // --- INICIO PESQUISA --- //
+    inicio = clock();
+
+    retorno_funcao = pesquisa(raiz, chave, metricas);
+
+    fim = clock();
+
+    metricas->t_pesquisa = ((double) fim - inicio) / CLOCKS_PER_SEC;
+    // --- FIM PESQUISA --- //
+
+    return retorno_funcao;
 }

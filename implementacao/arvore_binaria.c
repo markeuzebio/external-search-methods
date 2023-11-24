@@ -14,6 +14,18 @@
 */
 static const unsigned int ITENS_POR_PAGINA = (128 * 1024 * 1024) / sizeof(Registro);
 
+void printArvoreBinaria(FILE* arq_arv_bin, unsigned int tam_arquivo)
+{
+    Registro registro;
+    unsigned int contador;
+
+    contador = 0;
+    while((contador += fread(&registro, sizeof(Registro), 1, arq_arv_bin)) <= tam_arquivo)
+        printf("%d\n", registro.chave);
+
+    rewind(arq_arv_bin);
+}
+
 bool arquivoEstaVazio(FILE *arq)
 {
     fseek(arq, 0, SEEK_END);
@@ -21,7 +33,7 @@ bool arquivoEstaVazio(FILE *arq)
     return ftell(arq) == 0;
 }
 
-void alterarApontadores(FILE *arq_arv_bin, int chave_novo_item, unsigned long posicao_no_filho)
+void alterarApontadores(FILE *arq_arv_bin, int chave_novo_item, unsigned long posicao_no_filho, Metrica *metricas)
 {
     long posicao_no_pai;
     No item_atual;
@@ -32,7 +44,9 @@ void alterarApontadores(FILE *arq_arv_bin, int chave_novo_item, unsigned long po
     {
         fseek(arq_arv_bin, posicao_no_pai * sizeof(No), SEEK_SET);
         fread(&item_atual, sizeof(No), 1, arq_arv_bin);
+        metricas->n_leitura_pre_processamento++;
 
+        metricas->n_comparacoes_pre_processamento++;
         if(item_atual.registro.chave > chave_novo_item)
         {
             // O pai eh o item corrente.
@@ -74,7 +88,7 @@ void alterarApontadores(FILE *arq_arv_bin, int chave_novo_item, unsigned long po
     }
 }
 
-void inserirRegistroNoArquivoAsc(FILE *arq_arv_bin, No *item)
+void inserirRegistroNoArquivoAsc(FILE *arq_arv_bin, No *item, Metrica *metricas)
 {
     No no_pai;
 
@@ -84,6 +98,7 @@ void inserirRegistroNoArquivoAsc(FILE *arq_arv_bin, No *item)
     /* Conjunto de operacoes utilizados para pegar o no pai do no mais recentemente inserido */
     fseek(arq_arv_bin, -2 * sizeof(No), SEEK_CUR);
     fread(&no_pai, sizeof(No), 1, arq_arv_bin);
+    metricas->n_leitura_pre_processamento++;
 
     // Atualiza o apontador direito do no pai, fazendo com que esse apontador aponte para o no mais recentemente inserido
     no_pai.dir = ftell(arq_arv_bin);
@@ -94,7 +109,7 @@ void inserirRegistroNoArquivoAsc(FILE *arq_arv_bin, No *item)
     fseek(arq_arv_bin, 0, SEEK_END);
 }
 
-void inserirRegistroNoArquivoDesc(FILE *arq_arv_bin, No *item)
+void inserirRegistroNoArquivoDesc(FILE *arq_arv_bin, No *item, Metrica *metricas)
 {
     No no_pai;
 
@@ -104,6 +119,7 @@ void inserirRegistroNoArquivoDesc(FILE *arq_arv_bin, No *item)
     /* Conjunto de operacoes utilizados para pegar o no pai do no mais recentemente inserido */
     fseek(arq_arv_bin, -2 * sizeof(No), SEEK_CUR);
     fread(&no_pai, sizeof(No), 1, arq_arv_bin);
+    metricas->n_leitura_pre_processamento++;
 
     // Atualiza o apontador esquerdo do no pai, fazendo com que esse apontador aponte para o no mais recentemente inserido
     no_pai.esq = ftell(arq_arv_bin);
@@ -114,15 +130,15 @@ void inserirRegistroNoArquivoDesc(FILE *arq_arv_bin, No *item)
     fseek(arq_arv_bin, 0, SEEK_END);
 }
 
-void inserirRegistroNoArquivoRand(FILE *arq_arv_bin, No *item)
+void inserirRegistroNoArquivoRand(FILE *arq_arv_bin, No *item, Metrica *metricas)
 {
     fwrite(item, sizeof(No), 1, arq_arv_bin);
-    alterarApontadores(arq_arv_bin, item->registro.chave, ftell(arq_arv_bin) - sizeof(No));
+    alterarApontadores(arq_arv_bin, item->registro.chave, ftell(arq_arv_bin) - sizeof(No), metricas);
     fseek(arq_arv_bin, 0, SEEK_END);
 }
 
 
-FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrada, FILE *arq_arv_bin)
+FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrada, FILE *arq_arv_bin, Metrica *metricas)
 {
     int i;
     No item_arquivo_gerado;
@@ -132,6 +148,7 @@ FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrad
     while(i < entrada->quantidade_registros)
     {
         fread(pagina, sizeof(Registro), ITENS_POR_PAGINA, arq_bin);
+        metricas->n_leitura_pre_processamento++;
 
         /*
             Se o arquivo gerado esta vazio, preenche-o com um registro; isso eh importante
@@ -151,7 +168,7 @@ FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrad
             {
                 item_arquivo_gerado.dir = item_arquivo_gerado.esq = -1;
                 item_arquivo_gerado.registro = pagina[i % ITENS_POR_PAGINA];
-                inserirRegistroNoArquivoAsc(arq_arv_bin, &item_arquivo_gerado);
+                inserirRegistroNoArquivoAsc(arq_arv_bin, &item_arquivo_gerado, metricas);
                 i++;
             }
         }
@@ -161,7 +178,7 @@ FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrad
             {
                 item_arquivo_gerado.dir = item_arquivo_gerado.esq = -1;
                 item_arquivo_gerado.registro = pagina[i % ITENS_POR_PAGINA];
-                inserirRegistroNoArquivoDesc(arq_arv_bin, &item_arquivo_gerado);
+                inserirRegistroNoArquivoDesc(arq_arv_bin, &item_arquivo_gerado, metricas);
                 i++;
             }
         }
@@ -172,7 +189,7 @@ FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrad
             {
                 item_arquivo_gerado.dir = item_arquivo_gerado.esq = -1;
                 item_arquivo_gerado.registro = pagina[i % ITENS_POR_PAGINA];
-                inserirRegistroNoArquivoRand(arq_arv_bin, &item_arquivo_gerado);
+                inserirRegistroNoArquivoRand(arq_arv_bin, &item_arquivo_gerado, metricas);
                 i++;
             }
         }
@@ -181,24 +198,41 @@ FILE* geraArquivoArvoreBinaria(FILE *arq_bin, Registro pagina[], Entrada *entrad
     return arq_arv_bin;
 }
 
-short int arvoreBinariaGerar(FILE *arq_bin, FILE *arq_arv_bin, Entrada *entrada)
+short int arvoreBinariaGerar(FILE *arq_bin, FILE *arq_arv_bin, Entrada *entrada, Metrica *metricas)
 {
     Registro *pagina;
+    // Variaveis usadas para metricas
+    clock_t inicio;
+    clock_t fim;
+
+    // --- INICIO PRE-PROCESSAMENTO --- //
+    inicio = clock();
 
     if((pagina = alocarRegistros(ITENS_POR_PAGINA)) == NULL)
         return 0;
 
-    geraArquivoArvoreBinaria(arq_bin, pagina, entrada, arq_arv_bin);
+    geraArquivoArvoreBinaria(arq_bin, pagina, entrada, arq_arv_bin, metricas);
 
     desalocarRegistros(&pagina);
+
+    fim = clock();
+
+    metricas->t_pre_processamento += ((double) fim - inicio) / CLOCKS_PER_SEC;
+    // --- FIM PRE-PROCESSAMENTO --- //
 
     return 1;
 }
 
-bool arvoreBinaria(FILE *arq_arv_bin, int chave)
+bool arvoreBinaria(FILE *arq_arv_bin, int chave, Metrica *metricas)
 {
     long int posicao_arquivo;
     No item;
+    // Variaveis usadas para metricas
+    clock_t inicio;
+    clock_t fim;
+
+    // --- INICIO PESQUISA --- //
+    inicio = clock();
 
     rewind(arq_arv_bin);
 
@@ -208,22 +242,42 @@ bool arvoreBinaria(FILE *arq_arv_bin, int chave)
     {
         fseek(arq_arv_bin, posicao_arquivo, SEEK_SET);
         fread(&item, sizeof(No), 1, arq_arv_bin);
+        metricas->n_leitura_pesquisa++;
 
+        metricas->n_comparacoes_pesquisa++;
         if(item.registro.chave == chave)
+        {
+            fim = clock();
+            metricas->t_pesquisa += ((double) fim - inicio) / CLOCKS_PER_SEC;
+            // --- FIM PESQUISA --- //
+
             return true;
+        }
         else
         {
             if(item.registro.chave > chave)
             {
                 if(item.esq == -1)
+                {
+                    fim = clock();
+                    metricas->t_pesquisa += ((double) fim - inicio) / CLOCKS_PER_SEC;
+                    // --- FIM PESQUISA --- //
+
                     return false;
+                }
                 
                 posicao_arquivo = item.esq;
             }
             else
             {
                 if(item.dir == -1)
+                {
+                    fim = clock();
+                    metricas->t_pesquisa += ((double) fim - inicio) / CLOCKS_PER_SEC;
+                    // --- FIM PESQUISA --- //
+
                     return false;
+                }
 
                 posicao_arquivo = item.dir;
             }

@@ -21,10 +21,8 @@ typedef struct pagina {
     struct pagina* prox_pagina[ORDEM_MM + 1];
 } Pagina;
 
-void iniciaArvore(Pagina **raiz);
-void inserir(Pagina **raiz, Registro *item);
 void printArvoreB(Pagina *raiz);
-Pagina* gerarArvoreB(FILE*, Entrada*);
+Pagina* gerarArvoreB(FILE*, Entrada*, Metrica*);
 void desalocarArvoreB(Pagina**);
-bool arvoreB(Pagina *raiz, int chave);
+bool arvoreB(Pagina *raiz, int chave, Metrica*);
 #endif

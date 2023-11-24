@@ -1,11 +1,23 @@
 #ifndef __UTILITARIOS__
 #define __UTILITARIOS__
 
+#include <time.h>
 #include <stdio.h>
 #include <stdbool.h>
 
 #define TAM_TITULO 5001
 #define MAX_TABELA 100      // Numero arbitrario
+
+// -------------- QUESTOES DE TESTE E METRICAS -------------- //
+typedef struct {
+    double t_pre_processamento;
+    double t_pesquisa;
+    unsigned long int n_leitura_pre_processamento;
+    unsigned long int n_leitura_pesquisa;
+    unsigned long int n_comparacoes_pre_processamento;
+    unsigned long int n_comparacoes_pesquisa;
+} Metrica;
+// -------------- QUESTOES DE TESTE E METRICAS -------------- //
 
 typedef struct {
     int indices[MAX_TABELA];
@@ -39,6 +51,8 @@ typedef struct {
 
 Registro* alocarRegistros(int);
 void desalocarRegistros(Registro**);
+void resetaMetricas(Metrica*);
+void exibirMetricas(Metrica*);
 
 /*
     RETURN

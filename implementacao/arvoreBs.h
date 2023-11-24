@@ -30,8 +30,8 @@ typedef struct pagina_ {
     } Uniao;
 } Pagina_;
 
-bool arvoreB_(Pagina_ *raiz, int chave);
-Pagina_* gerarArvoreB_(FILE*, Entrada*);
+bool arvoreB_(Pagina_ *raiz, int chave, Metrica*);
+Pagina_* gerarArvoreB_(FILE*, Entrada*, Metrica*);
 void printArvoreB_(Pagina_*);
 void desalocarArvoreB_(Pagina_**);
 

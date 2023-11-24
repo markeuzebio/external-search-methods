@@ -1,7 +1,7 @@
 DIR = implementacao
 
 all.o: main.o utilitarios.o sequencial.o arvore_binaria.o arvoreB.o arvoreBs.o
-	@gcc main.o utilitarios.o sequencial.o arvore_binaria.o arvoreB.o arvoreBs.o -o exe
+	@gcc main.o utilitarios.o sequencial.o arvore_binaria.o arvoreB.o arvoreBs.o -o pesquisa
 	@rm main.o utilitarios.o sequencial.o arvore_binaria.o arvoreB.o arvoreBs.o
 
 main.o: main.c
